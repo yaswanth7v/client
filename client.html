@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Location Data from Firebase</title>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/firebase/7.14.1-0/firebase.js"></script>
+  //<script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyAftggrcsvxKDzWbGb5ZwO6B6Zo52PHlxQ&callback=initMap" async defer></script>
+  
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background-color: #f4f4f4;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background-color: #fff;
+      border-radius: 5px;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+    }
+    h1 {
+      text-align: center;
+    }
+    #location-data {
+      margin-top: 20px;
+      
+      border-top: 1px solid #ccc;
+      padding-top: 20px;
+    }
+    .location-item {
+      margin-bottom: 10px;
+    }
+    #map {
+      height: 400px;
+      margin-top: 20px;
+      margin-bottom:20px;
+    }
+    /* Button animation */
+    #get-coordinates {
+        padding: 10px 20px;
+        text-align: center;
+        background-color: #4CAF50;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+      }
+  
+      #get-coordinates:hover {
+        background-color: #45a049;
+      }
+  
+      #get-coordinates:active {
+        background-color: #3e8e41;
+      }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Track My Bag</h1>
+    <div id="location-data"></div>
+    <div id="map"></div>
+    <button onclick="displayLocations()" id="get-coordinates">Get Latest Coordinates</button>
+  </div>
+
+  <script>
+    // Replace with your actual Firebase project credentials
+    const firebaseConfig = {
+        apiKey: "AIzaSyBoU3XEQikl1mumoPYj4shfOoYEYVPiEi8",
+        authDomain: "track-my-bag-85bb3.firebaseapp.com",
+        databaseURL: "https://track-my-bag-85bb3-default-rtdb.firebaseio.com",
+        projectId: "track-my-bag-85bb3",
+        storageBucket: "track-my-bag-85bb3.appspot.com",
+        messagingSenderId: "685309464073",
+        appId: "1:685309464073:web:a3b8fa544304343af632d8"
+      };
+    firebase.initializeApp(firebaseConfig);
+
+    // Reference to the locations node in Firebase
+    const locationsRef = firebase.database().ref("locations");
+
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+      const earthRadius = 6371; // Earth's radius in kilometers
+      const lat1Rad = (lat1 * Math.PI) / 180;
+      const lon1Rad = (lon1 * Math.PI) / 180;
+      const lat2Rad = (lat2 * Math.PI) / 180;
+      const lon2Rad = (lon2 * Math.PI) / 180;
+
+      const distance = Math.acos(
+        Math.sin(lat1Rad) * Math.sin(lat2Rad) +
+        Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.cos(lon2Rad - lon1Rad)
+      ) * earthRadius;
+
+      return distance;
+    }
+
+    function displayLocations() {
+        locationsRef.limitToLast(1).on('value', (snapshot) => { // Limit to last item
+          const data = snapshot.val();
+          let locationOutput = "";
+          for (let key in data) {
+            if (data.hasOwnProperty(key)) {
+              const location = data[key];
+              const distance = calculateDistance(location.latitude, location.longitude, 12.8379, 80.1373);
+              let campusStatus = "";
+              if (distance < 1.5) {
+                campusStatus = "Inside IIITdm Kancheepuram campus";
+              } else {
+                campusStatus = "Outside IIITdm Kancheepuram campus";
+              }
+              locationOutput += `<div class="location-item">Latitude: ${location.latitude}<br>Longitude: ${location.longitude}<br>Distance to fixed location: ${distance.toFixed(2)} km<br>Status: ${campusStatus}</div>`;
+              // Display map with the last location
+              displayMap(location.latitude, location.longitude);
+              break; // Exit loop after processing the last item
+            }
+          }
+          document.getElementById("location-data").innerHTML = locationOutput;
+        });
+    }
+    
+    function displayMap(lat, lng) {
+      const map = new google.maps.Map(document.getElementById("map"), {
+        center: { lat: lat, lng: lng },
+        zoom: 15,
+      });
+      const marker = new google.maps.Marker({
+        position: { lat: lat, lng: lng },
+        map: map,
+      });
+    }
+    
+      
+
+    function initMap() {
+        // Center coordinates for the map
+        const centerCoordinates = { lat: 0, lng: 0 };
+      
+        // Options for the map
+        const mapOptions = {
+          center: centerCoordinates, // Center the map at the specified coordinates
+          zoom: 2, // Zoom level (0 = furthest out, higher values = closer in)
+          mapTypeId: google.maps.MapTypeId.ROADMAP // Type of map (e.g., ROADMAP, SATELLITE, HYBRID, TERRAIN)
+        };
+      
+        // Create a new map object
+        const map = new google.maps.Map(document.getElementById("map"), mapOptions);
+      }
+      
+  </script>
+</body>
+</html>
